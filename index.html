@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SonRun</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      text-align: center;
+    }
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      z-index: 10;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="score">Score: 0</div>
+  <canvas id="game"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const lanes = [canvas.width/3, canvas.width/2, canvas.width*2/3];
+
+    let player = {
+      lane: 1,
+      y: canvas.height - 120,
+      size: 50
+    };
+
+    let obstacles = [];
+    let score = 0;
+    let speed = 6;
+    let gameOver = false;
+
+    function spawnObstacle() {
+      const lane = Math.floor(Math.random() * 3);
+      obstacles.push({
+        lane: lane,
+        y: -60,
+        size: 50
+      });
+    }
+
+    function drawPlayer() {
+      ctx.fillStyle = "cyan";
+      ctx.fillRect(lanes[player.lane] - player.size/2, player.y, player.size, player.size);
+    }
+
+    function drawObstacles() {
+      ctx.fillStyle = "red";
+      for (let obs of obstacles) {
+        ctx.fillRect(lanes[obs.lane] - obs.size/2, obs.y, obs.size, obs.size);
+      }
+    }
+
+    function updateObstacles() {
+      for (let obs of obstacles) {
+        obs.y += speed;
+
+        if (
+          obs.lane === player.lane &&
+          obs.y < player.y + player.size &&
+          obs.y + obs.size > player.y
+        ) {
+          gameOver = true;
+        }
+      }
+
+      obstacles = obstacles.filter(o => o.y < canvas.height + 100);
+    }
+
+    function loop() {
+      if (gameOver) {
+        ctx.fillStyle = "white";
+        ctx.font = "50px Arial";
+        ctx.fillText("Game Over", canvas.width/2 - 120, canvas.height/2);
+        ctx.font = "20px Arial";
+        ctx.fillText("Refresh to restart", canvas.width/2 - 90, canvas.height/2 + 40);
+        return;
+      }
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      drawPlayer();
+      drawObstacles();
+      updateObstacles();
+
+      score++;
+      scoreEl.textContent = "Score: " + score;
+
+      if (Math.random() < 0.03) spawnObstacle();
+
+      if (score % 200 === 0) speed += 0.5;
+
+      requestAnimationFrame(loop);
+    }
+
+    // FIXED CONTROLS (arrow keys work reliably)
+    window.addEventListener("keydown", (e) => {
+      if (["ArrowLeft","ArrowRight"].includes(e.key)) {
+        e.preventDefault(); // stops page scrolling
+      }
+
+      if (e.key === "ArrowLeft" && player.lane > 0) {
+        player.lane--;
+      }
+
+      if (e.key === "ArrowRight" && player.lane < 2) {
+        player.lane++;
+      }
+    });
+
+    // keep focus on window for input
+    window.focus();
+
+    loop();
+  </script>
+</body>
+</html>
